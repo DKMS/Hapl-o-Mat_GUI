@@ -56,7 +56,7 @@ import sys
 
 # import own modules
 import GUI_miscFeatures
-
+import utils
 
 class Resolution(QWidget):
     """Window for choice of loci resolution 
@@ -82,17 +82,9 @@ class Resolution(QWidget):
         # stylesheet and platform
         # # fbs app special
         # appctxt = ApplicationContext()
-        if platform.system() == "Windows":
-            # # fbs app special            
-            # stylesheet = appctxt.get_resource('styleWin.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read()) 
-            self.setStyleSheet(open("styleWin.qss", "r").read())
-        elif platform.system() == "Linux":
-            # # fbs app special            
-            # stylesheet = appctxt.get_resource('styleLinux.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read())
-            self.setStyleSheet(open("styleLinux.qss", "r").read())
-        
+        # set stylesheet for the window
+        utils.set_style_sheet(self)
+
         self.drop_resolutions = ['g', 'G', 'P', '1field', '2field', '3field', '4field', 'ignore locus']              
         
         self.layout = QVBoxLayout()

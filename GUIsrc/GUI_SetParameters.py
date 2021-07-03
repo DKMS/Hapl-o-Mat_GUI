@@ -54,6 +54,8 @@ import sys
 import shutil
 import re
 
+import utils
+
 # import own modules
 import GUI_Resolution, GUI_miscFeatures
 
@@ -67,7 +69,6 @@ class Parameters(QWidget):
         """constructor
         """
         super(Parameters, self).__init__()
-        
         self.listLociBD = listLociBD
         self.dirHap = dirHap
         
@@ -88,17 +89,8 @@ class Parameters(QWidget):
         # stylesheet and platform
         # # fbs app special
         # appctxt = ApplicationContext()
-        if platform.system() == "Windows":
-            # # fbs app special
-            self.setStyleSheet(open("styleWin.qss", "r").read())
-            # stylesheet = appctxt.get_resource('styleWin.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read()) 
-        elif platform.system() == "Linux":
-            # # fbs app special
-            self.setStyleSheet(open("styleLinux.qss", "r").read())
-            # stylesheet = appctxt.get_resource('styleLinux.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read())    
-        
+        utils.set_style_sheet(self, "Your OS is not supported")
+
         global dictLoci
         dictLoci = {}
         self.listLoci = []
