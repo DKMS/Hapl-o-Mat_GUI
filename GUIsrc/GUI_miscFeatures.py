@@ -48,7 +48,7 @@ import sys, os
 from collections import defaultdict
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QVBoxLayout, QTextBrowser,
-                             QLabel, QFrame, QPushButton, QMessageBox, QDesktopWidget)
+                             QLabel, QFrame, QPushButton, QMessageBox, QDesktopWidget, QDialog)
 from PyQt5.Qt import (QWidget, pyqtSlot, QVBoxLayout, pyqtSignal)
 from PyQt5.QtCore import QObject, pyqtSignal, QFile, QTextStream, Qt
 
@@ -71,136 +71,69 @@ button_style_info = " QPushButton:hover { border: 2px solid #707070 }" " QPushBu
 #"DKMSpink" : "#ED6676",
 #"DKMSdarkpink" : "#E53449",
 
-# classes:    
-class UnderConstruction(QWidget):
-    """a widget to show that something is not implemented yet
+
+class InformationDialog(QDialog):
     """
-    def __init__(self):
-        """constructor
+    Dialog to show relevant information
+    file_type: "txt", "htm" or "underconstruction"
+    file_name: "filename" or None
+    """
+    def __init__(self, file_type, file_name, parent=None):
+        super().__init__(parent)
+        self.file_type = file_type
+        self.file_name = file_name
+        self.layout = None
+        self.initUI()
+
+    def initUI(self):
         """
-        super().__init__()
-        self.initUI()
-        
-    def initUI(self):
-        """define the GUI
-        """  
+        define the UI
+        """
+        self.information_display()
 
-        # # fbs app special
-        # appctxt = ApplicationContext()
-        # pixmap= QPixmap(appctxt.get_resource("construction.jpg")).scaledToWidth(100)
-        pixmap = QPixmap(os.path.join("Icons","construction.jpg")).scaledToWidth(100)
-        
-        grid = QGridLayout()
-        self.setLayout(grid)
-        self.resize(300,30)
-        
-        # move to center of App
-        qtRectangle = self.frameGeometry()
-        centerPoint = QDesktopWidget().availableGeometry().center()
-        qtRectangle.moveCenter(centerPoint)
-        self.move(qtRectangle.topLeft())
-        
-        self.pic_lbl = QLabel(self)
-        self.pic_lbl.setPixmap(pixmap)
-        grid.addWidget(self.pic_lbl, 0, 0)
-        
-        self.text = QLabel("Under construction!", self)
-        self.text.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        grid.addWidget(self.text, 0, 1)
-        
-        self.show()
-        
-
-
-
-
-#################################        
-
-class InfoWidget(QWidget):
-    """Parameter window
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-        
-    def initUI(self):
-        """define the GUI
-        """   
-        
-        # # fbs app special
-        # appctxt = ApplicationContext()
-        # infoText = open(appctxt.get_resource('Licenses.txt')).read()
-        infoText = open("Licenses.txt").read()
-
-        #positioning
-        self.setMinimumSize(800,400)
-        self.center()
-        layout = QVBoxLayout()
-        labOutputBD = QTextBrowser()
-        labOutputBD.verticalScrollBar().setStyleSheet('background: grey')
-        layout.addWidget(labOutputBD)
-        labOutputBD.setText(infoText)
-        self.setLayout(layout)
+        self.setLayout(self.layout)
         self.show()
 
-# Functions
+    def information_display(self):
+        """
+        set main layout with injection. Text, images.
+        """
+        if self.file_name:
+            # positioning
+            self.layout = QVBoxLayout()
+            self.setMinimumSize(800, 400)
+            self.center()
+            labOutputBD = QTextBrowser(self)
+            labOutputBD.verticalScrollBar().setStyleSheet('background: grey')
+            self.layout.addWidget(labOutputBD)
+            f = QFile(self.file_name)
+            f.open(QFile.ReadOnly | QFile.Text)
+            istream = QTextStream(f)
+            if self.file_type == "txt":
+                labOutputBD.setText(istream.readAll())
+            elif self.file_type == "htm":
+                labOutputBD.setHtml(istream.readAll())
+            f.close()
+
+        elif self.file_type == "underconstruction":
+            # special case, no txt, no htm
+            self.layout = QGridLayout()
+            pixmap = QPixmap(os.path.join("Icons", "construction.jpg")).scaledToWidth(100)
+            text = QLabel("Under construction!", self)
+            self.layout.addWidget(text, 0, 1)
+            pic_lbl = QLabel(self)
+            pic_lbl.setPixmap(pixmap)
+            self.layout.addWidget(pic_lbl, 0, 0)
 
     def center(self):
-        """moves window to screen center
+        """
+        moves window to screen center
         """
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
-        
-        
-#####################################
-        
-class TutorialWidget(QWidget):
-    """Parameter window
-    """
 
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-        
-    def initUI(self):
-        """define the GUI
-        """   
-        #positioning
-        self.setMinimumSize(800,400)
-        self.center()
-        layout = QVBoxLayout()
-        labOutputT = QTextBrowser()
-        labOutputT.verticalScrollBar().setStyleSheet('background: grey')
-
-        # fbs app special
-        # appctxt = ApplicationContext()
-        # f = QFile(appctxt.get_resource('ManualHapl-o-MatViaGUI.htm'))
-        f = QFile("ManualHapl-o-MatViaGUI.htm")
-        
-        f.open(QFile.ReadOnly|QFile.Text)
-        istream = QTextStream(f)
-        labOutputT.setHtml(istream.readAll())
-        f.close()
-        layout.addWidget(labOutputT)
-        
-        self.setLayout(layout)
-        self.show()
-        
-        
-        
-# Functions
-
-    def center(self):
-        """moves window to screen center
-        """
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-        
         
         
 ##################################

@@ -49,7 +49,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import (QWidget, QRadioButton, QPushButton, QLabel,  
         QApplication, QVBoxLayout, QHBoxLayout, QGridLayout, QSplitter, QLineEdit,
         QCheckBox, QGroupBox, QFrame, QMainWindow, QMessageBox, QFileDialog, QToolTip)   
-from PyQt5.QtCore import Qt, QDateTime, QTimer
+from PyQt5.QtCore import Qt, QDateTime, QTimer, pyqtSlot
 from PyQt5.QtGui import QPixmap, QPainter, QColor
 from functools import partial
 from pathlib import Path
@@ -57,6 +57,8 @@ import sys, os, time, platform
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
+
+import utils
 
 # import own modules
 import GUI_BuildData, GUI_SetParameters, GUI_miscFeatures
@@ -67,7 +69,6 @@ import GUI_BuildData, GUI_SetParameters, GUI_miscFeatures
         # window = MainW()
         # window.show()
         # return self.app.exec_() 
-        
 
 
 class MainW(QMainWindow):
@@ -79,54 +80,14 @@ class MainW(QMainWindow):
         self.initUI()
  
         # platform
-        if platform.system() == "Windows":
-            # print('Current operating system = ',platform.system())
-            # # fbs app special
-            self.setStyleSheet(open("styleWin.qss", "r").read())
-            # stylesheet = appctxt.get_resource('styleWin.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read()) 
-        elif platform.system() == "Linux":
-            # print('Current operating system = ',platform.system())
-            # # fbs app special
-            self.setStyleSheet(open("styleLinux.qss", "r").read())
-            # stylesheet = appctxt.get_resource('styleLinux.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read())    
-        else:
-            print('Current operating system is not supported!')   
-        
-        
+        utils.set_style_sheet(self, "Your current OS is not supported")
 
-        
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Exit Application', 'Are you sure you want to exit the application?',
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            try: self.para
-            except:
-                pass
-            else:
-                self.para.close()
-                
-            try: self.createTutWin
-            except:
-                pass
-            else:
-                self.createTutWin.close()
-                
-            try: self.createInfoWin
-            except:
-                pass
-            else:
-                self.createInfoWin.close()
-                
-            try: self.createDataWin
-            except:
-                pass
-            else:
-                self.createDataWin.close()              
-            
-            # # fbs special
-            # print("Press Ctrl+C to return to prompt.")
+            for widget in QApplication.topLevelWidgets():
+                widget.close()
             event.accept()
         else:
             event.ignore()
@@ -209,22 +170,24 @@ class MainW(QMainWindow):
     def create_HeaderFrame(self):
         """defines the header frame of the Main Window
         """
-        headerFrame = QFrame()
+        headerFrame = QFrame(self)
         headerFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)        
         layoutHeader = QHBoxLayout()
-        labLogo = QLabel()
+        labLogo = QLabel(self)
 
         #fbs app special
         # pixmap_Icon= QPixmap(appctxt.get_resource("logo.gif")).scaledToWidth(110)
         pixmap_Icon= QPixmap(os.path.join("Icons", "logo.gif")).scaledToWidth(110)
 
         labLogo.setPixmap(pixmap_Icon)
-        labHeader = QLabel()
+        labHeader = QLabel(self)
         labHeader.setTextFormat(Qt.RichText)
         labHeader.setText("<font size='5'> <b>Hapl-o-Mat - A software tool for haplotype frequency estimation</b></font>")
-        btnTutorial = QPushButton("Manual")
+        btnTutorial = QPushButton("Manual", self)
+        btnTutorial.setObjectName("tutorial")
         btnTutorial.setStyleSheet(GUI_miscFeatures.button_style_info)
-        btnInfo = QPushButton("About")
+        btnInfo = QPushButton("About", self)
+        btnInfo.setObjectName("information")
         btnInfo.setStyleSheet(GUI_miscFeatures.button_style_info)
         
         layoutHeader.addWidget(labLogo)
@@ -238,8 +201,8 @@ class MainW(QMainWindow):
         self.grid.addWidget(headerFrame, 0, 0,1,11)
         
         # Button Actions
-        btnTutorial.clicked.connect(self.tutorialScreen)
-        btnInfo.clicked.connect(self.infoScreen)
+        btnTutorial.clicked.connect(self.display_dialog)
+        btnInfo.clicked.connect(self.display_dialog)
         
     #PathFrame
     def create_PathFrame(self):
@@ -250,7 +213,7 @@ class MainW(QMainWindow):
         layoutPHHori = QHBoxLayout()
         labPathHap = QLabel()
         labPathHap.setText("Please set path\nto Hapl-o-Mat folder.")
-        btnPathHap = QPushButton("...")
+        btnPathHap = QPushButton("...", self)
         self.labTickPath = QLabel()
         self.labTickPath.setLineWidth(1)
         btnPathHap.setToolTip("""Please set the path to the folder containing the executable 'haplomat'.""")
@@ -288,7 +251,7 @@ class MainW(QMainWindow):
         self.labOLociBuildData = QtWidgets.QLabel()
         self.labOLociBuildData.setTextFormat(Qt.RichText)
         self.labOLociBuildData.setWordWrap(True)
-        btnBuildData = QPushButton("Update")
+        btnBuildData = QPushButton("Update", self)
 
         btnBuildData.setToolTip("""Hapl-o-Mat relies on information about the HLA nomenclature provided by external files. 
         After the first download of Hapl-o-Mat the initial data update is mandatory. 
@@ -317,7 +280,7 @@ class MainW(QMainWindow):
         layoutWdir = QVBoxLayout()
         layoutSet = QHBoxLayout()
         # Set Frame
-        btnSetParameters = QPushButton("Parameters")  
+        btnSetParameters = QPushButton("Parameters", self)
         btnSetParameters.setToolTip("""Please push the 'Parameters' button to set run parameters or load an existing parameter file.
         Parameters can either be set manually via input mask or loaded from a valid existing parameter file.""")        
         self.labTickPa = QLabel()
@@ -352,10 +315,10 @@ class MainW(QMainWindow):
         self.labLog.setWordWrap(True)
 
         LayoutRunLine = QHBoxLayout()
-        btnRun = QPushButton("Run")        
+        btnRun = QPushButton("Run", self)
         btnRun.setStyleSheet(" QPushButton:hover { border: 2px solid #78D64A }" 
                              "QPushButton { background-color: QLinearGradient( x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #ADFF2F, stop: 1 #78D64A); }" )  
-        self.btnKillHaplomat =QPushButton("Abort")
+        self.btnKillHaplomat =QPushButton("Abort", self)
         self.btnKillHaplomat.setStyleSheet(GUI_miscFeatures.button_style_cancel)
         self.waitFrame = QFrame()
         LayoutRunLine.addWidget(self.waitFrame)
@@ -422,13 +385,13 @@ class MainW(QMainWindow):
         ChoiceBox = QHBoxLayout()
         labDisp = QLabel('Display:')
         labDisp.setFont(boldFont)
-        self.textEdit_TopX = QLineEdit('100')
-        self.radioButton1 = QRadioButton("TOP")
-        self.radioButton2 = QRadioButton("All")
-        self.radioButton3 = QRadioButton("All haplotypes with frequency >= 1/(2*n)")
-        self.radioButton4 = QRadioButton("All haplotypes with cumulated frequency <=")
+        self.textEdit_TopX = QLineEdit('100', self)
+        self.radioButton1 = QRadioButton("TOP", self)
+        self.radioButton2 = QRadioButton("All", self)
+        self.radioButton3 = QRadioButton("All haplotypes with frequency >= 1/(2*n)", self)
+        self.radioButton4 = QRadioButton("All haplotypes with cumulated frequency <=", self)
         self.radioButton1.setChecked(True)
-        self.textEdit_Cum = QLineEdit('0.995')
+        self.textEdit_Cum = QLineEdit('0.995', self)
         ChoiceBox.addWidget(labDisp)
         ChoiceBox.addStretch(1)
         ChoiceBox.addWidget(self.radioButton1)
@@ -472,10 +435,10 @@ class MainW(QMainWindow):
         ChoiceBoxPlot2 = QVBoxLayout()
         LayoutChoice2 = QHBoxLayout()        
         labPlot2 = QLabel('Display Log format:')
-        self.Plot2CheckBoxX = QCheckBox("x-axis")
-        self.Plot2CheckBoxY = QCheckBox("y-axis")
+        self.Plot2CheckBoxX = QCheckBox("x-axis", self)
+        self.Plot2CheckBoxY = QCheckBox("y-axis", self)
         self.Plot2CheckBoxY.setChecked(True)
-        btnReset =QPushButton("Reset plots")
+        btnReset =QPushButton("Reset plots", self)
         LayoutChoice2.addWidget(labPlot2)
         LayoutChoice2.addWidget(self.Plot2CheckBoxX)
         LayoutChoice2.addWidget(self.Plot2CheckBoxY)
@@ -528,24 +491,32 @@ class MainW(QMainWindow):
 
 #############################
 # Functions
-    
-    def underConstruction(self):
-        """opens 'under construction' dialog
+
+    @pyqtSlot()
+    def display_dialog(self):
         """
-        self.constructionAlert = GUI_miscFeatures.UnderConstruction()
-        
-    def infoScreen(self):
-        """opens a window with information on Hapl-o-Mat
+        Display dialogs
+        With object name defines which option to give
         """
-        self.createInfoWin = GUI_miscFeatures.InfoWidget()
-        self.createInfoWin.setWindowTitle('Hapl-o-Mat information')
-        
-    def tutorialScreen(self):
-        """opens a window with information on Hapl-o-Mat
-        """
-        self.createTutWin = GUI_miscFeatures.TutorialWidget()
-        self.createTutWin.setWindowTitle('Hapl-o-MatGUI manual')
-        
+        dialog_parameters = {
+            "tutorial": {
+                "file_type": "htm",
+                "file_name": "ManualHapl-o-MatViaGUI.htm",
+                "parent": self
+            },
+            "information": {
+                "file_type": "txt",
+                "file_name": "Licenses.txt",
+                "parent": self
+            },
+            "underconstruction": {
+                "file_type": "underconstruction",
+                "file_name": None,
+                "parent": self
+            }
+        }
+        self.dialog = GUI_miscFeatures.InformationDialog(**dialog_parameters[self.sender().objectName()])
+
     def browse_folder_Hap(self):
         """opens file dialog for choice of the results folder
         """     
