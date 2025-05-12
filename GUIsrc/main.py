@@ -40,7 +40,7 @@ Main window
 @author: Ute Solloch
 '''
 
-# # fbs app special
+# fbs app special
 # from fbs_runtime.application_context.PyQt5 import ApplicationContext
 # # import pkg_resources.py2_warn
 
@@ -49,7 +49,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import (QWidget, QRadioButton, QPushButton, QLabel,  
         QApplication, QVBoxLayout, QHBoxLayout, QGridLayout, QSplitter, QLineEdit,
         QCheckBox, QGroupBox, QFrame, QMainWindow, QMessageBox, QFileDialog, QToolTip)   
-from PyQt5.QtCore import Qt, QDateTime, QTimer
+from PyQt5.QtCore import Qt, QDateTime, QTimer, pyqtSlot
 from PyQt5.QtGui import QPixmap, QPainter, QColor
 from functools import partial
 from pathlib import Path
@@ -69,7 +69,6 @@ import GUI_BuildData, GUI_SetParameters, GUI_miscFeatures
         # return self.app.exec_() 
         
 
-
 class MainW(QMainWindow):
     """Main software window
     """
@@ -78,55 +77,24 @@ class MainW(QMainWindow):
         super().__init__()
         self.initUI()
  
-        # platform
-        if platform.system() == "Windows":
-            # print('Current operating system = ',platform.system())
-            # # fbs app special
-            self.setStyleSheet(open("styleWin.qss", "r").read())
-            # stylesheet = appctxt.get_resource('styleWin.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read()) 
-        elif platform.system() == "Linux":
-            # print('Current operating system = ',platform.system())
-            # # fbs app special
-            self.setStyleSheet(open("styleLinux.qss", "r").read())
-            # stylesheet = appctxt.get_resource('styleLinux.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read())    
-        else:
-            print('Current operating system is not supported!')   
+        # platform and stylesheet       
+        try:        
+            styleFile = GUI_miscFeatures.CONFIGURATION_FILES[platform.system()]["styleSheet"]  
+        except:
+            print("StyleSheet: Your current OS is not supported.")
+        # fbs app special
+        self.setStyleSheet(open(styleFile, "r").read())
+        # appctxt.app.setStyleSheet(open(appctxt.get_resource(styleFile)).read())            
         
-        
-
         
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Exit Application', 'Are you sure you want to exit the application?',
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            try: self.para
-            except:
-                pass
-            else:
-                self.para.close()
-                
-            try: self.createTutWin
-            except:
-                pass
-            else:
-                self.createTutWin.close()
-                
-            try: self.createInfoWin
-            except:
-                pass
-            else:
-                self.createInfoWin.close()
-                
-            try: self.createDataWin
-            except:
-                pass
-            else:
-                self.createDataWin.close()              
-            
             # # fbs special
             # print("Press Ctrl+C to return to prompt.")
+            for widget in QApplication.topLevelWidgets():
+                widget.close()
             event.accept()
         else:
             event.ignore()
@@ -144,7 +112,7 @@ class MainW(QMainWindow):
         central_widget.setLayout(self.grid)
         
         QToolTip.setFont(QtGui.QFont('SansSerif', 10))        
-        self.setStyleSheet("QGroupBox { font-weight: bold; font-size: 12pt } ")
+        self.setStyleSheet("QGroupBox { font-weight: bold; font-size: 12pt } ")        
         self.htfnr = 0
         self.dirHap = ''
         
@@ -159,13 +127,13 @@ class MainW(QMainWindow):
 
         #fbs app special
         # pixmap_Tick = QPixmap(appctxt.get_resource("tick.png")).scaledToWidth(20)
-        # pixmap_Icon = QPixmap(appctxt.get_resource("logo.gif")).scaledToWidth(150)
+        # pixmap_Icon = QPixmap(appctxt.get_resource("logo.png")).scaledToWidth(150)
         # pixmap_Error = QPixmap(appctxt.get_resource("error.png")).scaledToWidth(30)
         # pixmap_None = QPixmap(appctxt.get_resource("none.png")).scaledToWidth(30)
         # pixmap_Wait = QPixmap(appctxt.get_resource("progress3.png")).scaledToWidth(30)
         # pixmap_Caution = QPixmap(appctxt.get_resource("caution.png")).scaledToWidth(30)
         pixmap_Tick = QPixmap(os.path.join("Icons", "tick.png")).scaledToWidth(20)
-        pixmap_Icon = QPixmap(os.path.join("Icons", "logo.gif")).scaledToWidth(150)
+        pixmap_Icon = QPixmap(os.path.join("Icons", "logo.png")).scaledToWidth(150)
         pixmap_Error = QPixmap(os.path.join("Icons", "error.png")).scaledToWidth(30)
         pixmap_None = QPixmap(os.path.join("Icons", "none.png")).scaledToWidth(30)
         pixmap_Wait = QPixmap(os.path.join("Icons", "progress3.png")).scaledToWidth(30)
@@ -209,28 +177,26 @@ class MainW(QMainWindow):
     def create_HeaderFrame(self):
         """defines the header frame of the Main Window
         """
-        headerFrame = QFrame()
-        headerFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)        
+        headerFrame = QFrame(self)
+        headerFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)  
+        headerFrame.setStyleSheet("background-color: #ddd9d8;") 
         layoutHeader = QHBoxLayout()
-        labLogo = QLabel()
-
-        #fbs app special
-        # pixmap_Icon= QPixmap(appctxt.get_resource("logo.gif")).scaledToWidth(110)
-        pixmap_Icon= QPixmap(os.path.join("Icons", "logo.gif")).scaledToWidth(110)
-
+        labLogo = QLabel(self)
         labLogo.setPixmap(pixmap_Icon)
-        labHeader = QLabel()
+        labHeader = QLabel(self)
         labHeader.setTextFormat(Qt.RichText)
         labHeader.setText("<font size='5'> <b>Hapl-o-Mat - A software tool for haplotype frequency estimation</b></font>")
-        btnTutorial = QPushButton("Manual")
+        btnTutorial = QPushButton("Manual", self)
+        btnTutorial.setObjectName("tutorial")
         btnTutorial.setStyleSheet(GUI_miscFeatures.button_style_info)
-        btnInfo = QPushButton("About")
+        btnInfo = QPushButton("About", self)
+        btnInfo.setObjectName("information")
         btnInfo.setStyleSheet(GUI_miscFeatures.button_style_info)
         
         layoutHeader.addWidget(labLogo)
-        layoutHeader.addStretch(1)
+        layoutHeader.addStretch(5)
         layoutHeader.addWidget(labHeader)
-        layoutHeader.addStretch(10)
+        layoutHeader.addStretch(5)
         layoutHeader.addWidget(btnTutorial)
         layoutHeader.addWidget(btnInfo)
         headerFrame.setLayout(layoutHeader)
@@ -238,8 +204,8 @@ class MainW(QMainWindow):
         self.grid.addWidget(headerFrame, 0, 0,1,11)
         
         # Button Actions
-        btnTutorial.clicked.connect(self.tutorialScreen)
-        btnInfo.clicked.connect(self.infoScreen)
+        btnTutorial.clicked.connect(self.display_dialog)
+        btnInfo.clicked.connect(self.display_dialog)
         
     #PathFrame
     def create_PathFrame(self):
@@ -250,7 +216,7 @@ class MainW(QMainWindow):
         layoutPHHori = QHBoxLayout()
         labPathHap = QLabel()
         labPathHap.setText("Please set path\nto Hapl-o-Mat folder.")
-        btnPathHap = QPushButton("...")
+        btnPathHap = QPushButton("...", self)
         self.labTickPath = QLabel()
         self.labTickPath.setLineWidth(1)
         btnPathHap.setToolTip("""Please set the path to the folder containing the executable 'haplomat'.""")
@@ -288,18 +254,22 @@ class MainW(QMainWindow):
         self.labOLociBuildData = QtWidgets.QLabel()
         self.labOLociBuildData.setTextFormat(Qt.RichText)
         self.labOLociBuildData.setWordWrap(True)
-        btnBuildData = QPushButton("Update")
+        btnBuildData = QPushButton("Update", self)
+        btnDataSource = QPushButton("Sources", self)
 
         btnBuildData.setToolTip("""Hapl-o-Mat relies on information about the HLA nomenclature provided by external files. 
         After the first download of Hapl-o-Mat the initial data update is mandatory. 
         As the HLA nomenclature is constantly evolving, e.g. by inclusion of new alleles or new multiple allele codes, it
         is important to update this data regularly.""")
+        btnDataSource.setToolTip("""Lists the current URL sources of the data downloading process. URLs can be edited manually.""")
+        btnDataSource.setStyleSheet(GUI_miscFeatures.button_style_info)
         self.labTickBD = QLabel()
         self.labTickBD.setLineWidth(1)
         
         LayoutBDLine.addWidget(self.labTickBD)
         LayoutBDLine.addWidget(self.labOutputBuildData)
         LayoutBDLine.addStretch(1)
+        LayoutBDLine.addWidget(btnDataSource)
         LayoutBDLine.addWidget(btnBuildData)
         LayoutBuildData.addLayout(LayoutBDLine)
         LayoutBuildData.addWidget(self.labOLociBuildData)    
@@ -308,6 +278,7 @@ class MainW(QMainWindow):
                 
         # Button Actions
         btnBuildData.clicked.connect(self.create_data_prep)
+        btnDataSource.clicked.connect(self.view_data_sources)
     
     #Frame SetParameters
     def create_SetParametersFrame(self):
@@ -317,7 +288,7 @@ class MainW(QMainWindow):
         layoutWdir = QVBoxLayout()
         layoutSet = QHBoxLayout()
         # Set Frame
-        btnSetParameters = QPushButton("Parameters")  
+        btnSetParameters = QPushButton("Parameters", self)
         btnSetParameters.setToolTip("""Please push the 'Parameters' button to set run parameters or load an existing parameter file.
         Parameters can either be set manually via input mask or loaded from a valid existing parameter file.""")        
         self.labTickPa = QLabel()
@@ -352,15 +323,15 @@ class MainW(QMainWindow):
         self.labLog.setWordWrap(True)
 
         LayoutRunLine = QHBoxLayout()
-        btnRun = QPushButton("Run")        
+        btnRun = QPushButton("Run", self)
         btnRun.setStyleSheet(" QPushButton:hover { border: 2px solid #78D64A }" 
                              "QPushButton { background-color: QLinearGradient( x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #ADFF2F, stop: 1 #78D64A); }" )  
-        self.btnKillHaplomat =QPushButton("Abort")
+        self.btnKillHaplomat =QPushButton("Abort", self)
         self.btnKillHaplomat.setStyleSheet(GUI_miscFeatures.button_style_cancel)
         self.waitFrame = QFrame()
         LayoutRunLine.addWidget(self.waitFrame)
-        LayoutRunLine.addWidget(btnRun)
         LayoutRunLine.addWidget(self.btnKillHaplomat)
+        LayoutRunLine.addWidget(btnRun)
         LayoutRunLine.setAlignment(Qt.AlignRight)
         LayoutRun.addLayout(LayoutRunLine)
         LayoutRun.addWidget(self.labOutputRun) 
@@ -422,13 +393,13 @@ class MainW(QMainWindow):
         ChoiceBox = QHBoxLayout()
         labDisp = QLabel('Display:')
         labDisp.setFont(boldFont)
-        self.textEdit_TopX = QLineEdit('100')
-        self.radioButton1 = QRadioButton("TOP")
-        self.radioButton2 = QRadioButton("All")
-        self.radioButton3 = QRadioButton("All haplotypes with frequency >= 1/(2*n)")
-        self.radioButton4 = QRadioButton("All haplotypes with cumulated frequency <=")
+        self.textEdit_TopX = QLineEdit('100', self)
+        self.radioButton1 = QRadioButton("TOP", self)
+        self.radioButton2 = QRadioButton("All", self)
+        self.radioButton3 = QRadioButton("All haplotypes with frequency >= 1/(2*n)", self)
+        self.radioButton4 = QRadioButton("All haplotypes with cumulated frequency <=", self)
         self.radioButton1.setChecked(True)
-        self.textEdit_Cum = QLineEdit('0.995')
+        self.textEdit_Cum = QLineEdit('0.995', self)
         ChoiceBox.addWidget(labDisp)
         ChoiceBox.addStretch(1)
         ChoiceBox.addWidget(self.radioButton1)
@@ -457,8 +428,8 @@ class MainW(QMainWindow):
         self.plot2.plotItem.ctrlMenu = None         
         
         FramePlot1 = QFrame()
-        ChoiceBoxPlot1 = QVBoxLayout()        
-        LayoutChoice1 = QHBoxLayout()        
+        ChoiceBoxPlot1 = QVBoxLayout()  
+        LayoutChoice1 = QHBoxLayout()     
         labPlot1 = QLabel('Display Log format:')
         self.Plot1CheckBoxX = QCheckBox("x-axis")
         self.Plot1CheckBoxY = QCheckBox("y-axis")
@@ -470,24 +441,30 @@ class MainW(QMainWindow):
         
         FramePlot2 = QFrame()
         ChoiceBoxPlot2 = QVBoxLayout()
-        LayoutChoice2 = QHBoxLayout()        
+        LayoutChoice2 = QHBoxLayout()    
         labPlot2 = QLabel('Display Log format:')
-        self.Plot2CheckBoxX = QCheckBox("x-axis")
-        self.Plot2CheckBoxY = QCheckBox("y-axis")
+        self.Plot2CheckBoxX = QCheckBox("x-axis", self)
+        self.Plot2CheckBoxY = QCheckBox("y-axis", self)
         self.Plot2CheckBoxY.setChecked(True)
-        btnReset =QPushButton("Reset plots")
+        btnReset =QPushButton("Reset plots", self)
         LayoutChoice2.addWidget(labPlot2)
         LayoutChoice2.addWidget(self.Plot2CheckBoxX)
         LayoutChoice2.addWidget(self.Plot2CheckBoxY)
         LayoutChoice2.addStretch(1)
-        LayoutChoice2.addWidget(btnReset)
-        
+               
         ChoiceBoxPlot1.addWidget(self.plot1)
         ChoiceBoxPlot1.addLayout(LayoutChoice1)
         FramePlot1.setLayout(ChoiceBoxPlot1)
         ChoiceBoxPlot2.addWidget(self.plot2)
         ChoiceBoxPlot2.addLayout(LayoutChoice2)
         FramePlot2.setLayout(ChoiceBoxPlot2)
+
+        FrameReset = QFrame()
+        layoutReset = QHBoxLayout()
+        layoutReset.setSpacing(0)
+        layoutReset.addStretch(2)
+        layoutReset.addWidget(btnReset)
+        FrameReset.setLayout(layoutReset)
         
         # Checkboxes: state changed action
         self.Plot1CheckBoxX.stateChanged.connect(lambda:self.checkState1())
@@ -501,7 +478,7 @@ class MainW(QMainWindow):
         LayoutResFrame.addLayout(StatsBox)
         LayoutResFrame.addWidget(SepFrame)
         ChoiceFrame.setLayout(ChoiceBox)
-        LayoutResFrame.addWidget(ChoiceFrame)
+        LayoutResFrame.addWidget(ChoiceFrame)         
         
         splitter1.addWidget(FramePlot1)
         splitter1.addWidget(FramePlot2)        
@@ -509,7 +486,8 @@ class MainW(QMainWindow):
         # splitter2.setHandleWidth(8)
         splitter2.addWidget(self.labTopHTF)
         splitter2.addWidget(splitter1)
-        LayoutResFrame.addWidget(splitter2)        
+        LayoutResFrame.addWidget(splitter2)  
+        LayoutResFrame.addWidget(FrameReset) 
 
         resultsFrame.setLayout(LayoutResFrame)        
         self.grid.addWidget(resultsFrame, 1,4,4,7)
@@ -528,24 +506,28 @@ class MainW(QMainWindow):
 
 #############################
 # Functions
-    
-    def underConstruction(self):
-        """opens 'under construction' dialog
+ 
+    @pyqtSlot()
+    def display_dialog(self):                                            
         """
-        self.constructionAlert = GUI_miscFeatures.UnderConstruction()
-        
-    def infoScreen(self):
-        """opens a window with information on Hapl-o-Mat
+        Display dialogs
+        With object name defines which option to give                                                        
         """
-        self.createInfoWin = GUI_miscFeatures.InfoWidget()
-        self.createInfoWin.setWindowTitle('Hapl-o-Mat information')
-        
-    def tutorialScreen(self):
-        """opens a window with information on Hapl-o-Mat
-        """
-        self.createTutWin = GUI_miscFeatures.TutorialWidget()
-        self.createTutWin.setWindowTitle('Hapl-o-MatGUI manual')
-        
+        dialog_parameters = {
+            "tutorial": {
+                "file_type": "htm",
+                "file_name": "ManualHapl-o-MatViaGUI.htm",
+                "parent": self
+            },
+            "information": {
+                "file_type": "txt",
+                "file_name": "Licenses.txt",
+                "parent": self
+            }
+        }
+        self.dialog = GUI_miscFeatures.InformationDialog(**dialog_parameters[self.sender().objectName()])
+        self.dialog.move(self.pos())
+
     def browse_folder_Hap(self):
         """opens file dialog for choice of the results folder
         """     
@@ -580,11 +562,8 @@ class MainW(QMainWindow):
             self.labTickBD.setPixmap(pixmap_Error)
             self.listLociBD = []
             
-        # Update package available?
-        if platform.system() == "Windows":
-            self.fileBD = os.path.join(self.pathHapDir,"prepareData","BuildData.exe")
-        elif platform.system() == "Linux":
-            self.fileBD = os.path.join(self.pathHapDir,"prepareData","BuildData.py")        
+        # Update package available?       
+        self.fileBD = os.path.join(self.pathHapDir,"prepareData","BuildData.py")
         my_path1 = Path(self.fileBD)
         if not my_path1.is_file():
             textBD = self.labOutputBuildData.text()
@@ -608,6 +587,15 @@ class MainW(QMainWindow):
         paraFile.write('WRITE_GENOTYPES=true\n')
         paraFile.close()
 
+    def view_data_sources(self):
+        '''opens Dialog with editable list of download data sources.'''
+        if self.dirHap == '':
+                QMessageBox.about(self, "Error: No valid directory.", "Please set path to Hapl-o-Mat directory!") 
+        else:
+            self.viewDataSources = GUI_BuildData.ViewSources(self.pathHapDir)
+            self.viewDataSources.setWindowTitle('Download data sources')
+            self.viewDataSources.move(self.pos())
+
     def create_data_prep(self):
         """opens the window of the IPD-IMGT/HLA data update process (GUI_BuildData.CreateDataFrame)
         """
@@ -621,7 +609,7 @@ class MainW(QMainWindow):
         self.labOLociBuildData.clear()
         self.createDataWin = GUI_BuildData.CreateDataFrame(self.pathHapDir)
         self.createDataWin.setWindowTitle('Update in progress ...')
-        self.createDataWin.move(200, 200)
+        self.createDataWin.move(self.pos())
         self.createDataWin.stateBD.connect(self.indicateBDState)
         self.createDataWin.stateNoBD.connect(self.errorNoBuild)
             
@@ -648,12 +636,13 @@ class MainW(QMainWindow):
             fileEx = 1
 
         if fileEx > 0:
-            self.msgBox = QMessageBox()
+            self.msgBox = QMessageBox(self)
             self.msgBox.setIcon(QMessageBox.Warning)
             self.msgBox.setWindowTitle("File handling")
             self.msgBox.setText("Some of the download files needed for data processing are already present in the target directory and will not be refreshed. \nIf you want to download current data files please abort download process and remove files from Hapl-o-Mat directory 'predareData' (s. Tutorial). \nIf you have inserted the files manually, please ignore this message.")            
             self.msgBox.setStandardButtons(QMessageBox.Ok)        
             self.msgBox.exec_()
+            self.msgBox.move(self.pos())
 
         self.create_data()
 
@@ -712,12 +701,13 @@ class MainW(QMainWindow):
         self.strLoc = "available Loci:<br><font color= '#0000ff'> "
         z = 0
         for i in self.listLociBD:
-            z+=1 
-            if z==1:
+            z+=1
+            if z==1:            
                 self.strLoc = self.strLoc + i
             else:
-                if z==12:
-                   self.strLoc = self.strLoc + "<br> ," + i
+                zz= z/10
+                if int(zz) == zz:
+                   self.strLoc = self.strLoc + ", <br>" + i
                 else:
                     self.strLoc = self.strLoc + "," + i
         self.labOLociBuildData.setText(self.strLoc)        
@@ -731,10 +721,10 @@ class MainW(QMainWindow):
         else:
             # open parameter file
             self.para = GUI_SetParameters.Parameters(self.listLociBD, self.dirHap)
-            self.para.setWindowTitle('Set or load run parameters')
-            self.para.move(50, 50)
+            self.para.setWindowTitle('Set or load run parameters')            
             self.para.strParaSet.connect(self.setTickPara)
             self.para.show()
+            self.para.move(self.pos())
     
     def setTickPara(self, strParaSet):
         """processes signal from parameter window and displays chosen run parameters on main window
@@ -833,7 +823,7 @@ class MainW(QMainWindow):
                 # Process handles
                 self.btnKillHaplomat.clicked.connect(self.processHaplo.kill)
                 self.processHaplo.finished.connect(self.status_Haplomat)
-            elif platform.system() == "Linux":
+            elif (platform.system() == "Linux") or (platform.system() == "Darwin"):
                 self.processHaplo = QtCore.QProcess()
                 self.processHaplo.setWorkingDirectory(os.path.join(self.pathHapDir))
                 self.processHaplo.readyReadStandardOutput.connect(lambda: self.labOutputRun.append(str(self.processHaplo.readAllStandardOutput().data().decode('UTF-8')))) 
@@ -910,12 +900,13 @@ class MainW(QMainWindow):
         try:
             maxLine = int(self.textEdit_TopX.text())
         except ValueError:
-            msgTop = QMessageBox()
+            msgTop = QMessageBox(self)
             msgTop.setIcon(QMessageBox.Warning)
             msgTop.setWindowTitle("Invalid entry.")
             msgTop.setText("Please choose an integer value for TOP haplotype number display.")
             msgTop.setStandardButtons(QMessageBox.Ok)
             msgTop.exec_()
+            msgTop.move(self.pos())
             return
           
     def rb4EntryCheck(self):
@@ -924,12 +915,13 @@ class MainW(QMainWindow):
         try:
             cumFreq = float(self.textEdit_Cum.text())
         except ValueError:
-            msgCum = QMessageBox()
+            msgCum = QMessageBox(self)
             msgCum.setIcon(QMessageBox.Warning)
             msgCum.setWindowTitle("Invalid entry.")
             msgCum.setText("Please choose float value between 0 and 1 for cumulated frequency (e.g. 0.995).")
             msgCum.setStandardButtons(QMessageBox.Ok)
             msgCum.exec_()
+            msgCum.move(self.pos())
             return
             
     def checkState1(self):

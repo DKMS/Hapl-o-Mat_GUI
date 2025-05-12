@@ -1,10 +1,10 @@
 ![SplashScreen](images/Hapl-o-Mat_tag.png)
 
 
-# Hapl-o-MatGUI v1.0.1K source code
+# Hapl-o-MatGUI v1.3K source code
 
 ## General information:
-Hapl-o-MatGUI is a graphical user interface as optional extention for [Hapl-o-Mat](https://github.com/DKMS/Hapl-o-Mat) . Hapl-o-Mat is software for haplotype inference via an expectation-maximization algorithm. It supports processing and resolving various forms of HLA genotype data.
+Hapl-o-MatGUI is a graphical user interface as optional extention for [Hapl-o-Mat](https://github.com/DKMS/Hapl-o-Mat) . Hapl-o-Mat is software for haplotype inference via an expectation-maximization algorithm. It supports processing and resolving various forms of HLA genotype data. Supported input formats are MAC and GLSC.
 
 In order to use Hapl-o-Mat via the Hapl-o-MatGUI source code, you have to install both, [Hapl-o-Mat](https://github.com/DKMS/Hapl-o-Mat) and the [Hapl-o-MatGUI](https://github.com/DKMS/Hapl-o-Mat_GUI) , on your computer.
 
@@ -29,12 +29,14 @@ Enter folder GUIsrc in a command line interpreter and start the program via
     python main.py
     
 ## Manual: 
-For information on how to use Hapl-o-MatGUI follow the guide [TutorialHapl-o-MatViaGUI](TutorialHapl-o-MatViaGUI.pdf). 
+For information on how to use Hapl-o-MatGUI follow the guide [ManualHapl-o-MatViaGUI](ManualHapl-o-MatViaGUI.pdf). 
 
 ## Citation: 
-If you use Hapl-o-Mat and Hapl-oMatGUI for your research, please cite
+If you use Hapl-o-Mat and Hapl-oMatGUI for your research, please cite our publications
 
-Schaefer C, Schmidt AH, Sauter J. Hapl-o-Mat: open-source software for HLA haplotype frequency estimation from ambiguous and heterogeneous data. BMC Bioinformatics. 2017;18(1):284. Published 2017 May 30. doi:10.1186/s12859-017-1692-y
+ * Schaefer C, Schmidt AH, Sauter J. Hapl-o-Mat: open-source software for HLA haplotype frequency estimation from ambiguous and heterogeneous data. BMC Bioinformatics. 2017;18(1):284. Published 2017 May 30. doi:10.1186/s12859-017-1692-y
+ * Sauter J, Schaefer C, Schmidt AH. HLA Haplotype Frequency Estimation from Real-Life Data with the Hapl-o-Mat Software. Methods Mol Biol. 2018; 1802:275-284. doi: 10.1007/978-1-4939-8546-3_19. 
+ * Solloch UV, Schmidt AH, Sauter J. Graphical user interface for the haplotype frequency estimation software Hapl-o-Mat. Hum Immunol. 2022; 83(2):107-112. doi: 10.1016/j.humimm.2021.11.002.
 
 ## Contributors:
 If you want to participate in actively developing Hapl-o-MatGUI please join via Github.

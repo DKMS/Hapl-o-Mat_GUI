@@ -40,7 +40,7 @@ Widget for IPD-IMGT/HLA data update
 @author: Ute Solloch
 '''
 
-# fbs app special
+# # fbs app special
 # from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
 # import modules:
@@ -74,27 +74,23 @@ class CreateDataFrame(QGroupBox):
         """
         super().__init__()
         
-        self.pathHapDir = pathHapDir        
+        self.pathHapDir = pathHapDir      
         
         self.initUI()
         
     def initUI(self):
         """define the GUI
-        """        
+        """   
         
-        # stylesheet and platform
-        # # fbs app special
+        # platform and stylesheet
+        try:        
+            styleFile = GUI_miscFeatures.CONFIGURATION_FILES[platform.system()]["styleSheet"]  
+        except:
+            print("StyleSheet: Your current OS is not supported.")
+        # fbs app special
+        self.setStyleSheet(open(styleFile, "r").read())
         # appctxt = ApplicationContext()
-        if platform.system() == "Windows":
-            # # fbs app special            
-            # stylesheet = appctxt.get_resource('styleWin.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read()) 
-            self.setStyleSheet(open("styleWin.qss", "r").read())
-        elif platform.system() == "Linux":
-            # # fbs app special            
-            # stylesheet = appctxt.get_resource('styleLinux.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read())
-            self.setStyleSheet(open("styleLinux.qss", "r").read())
+        # appctxt.app.setStyleSheet(open(appctxt.get_resource(styleFile)).read()) 
         
         self.setWindowFlags(Qt.WindowTitleHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
         global dirParent        
@@ -152,10 +148,24 @@ class CreateDataFrame(QGroupBox):
                     self.btnKillProcess.clicked.connect(self.close)
                     self.process.finished.connect(self.status_CreateData1)
                 else:
-                    self.btnKillProcess.clicked.connect(self.close)
-                    self.btnKillProcess.clicked.connect(self.buzy_Close)
-                    self.status_NoBuild()
-            elif platform.system() == "Linux":
+                    self.fileBD = os.path.join(self.pathBD, "BuildData.py")
+                    my_path = Path(self.fileBD)
+                    if my_path.is_file():
+                        self.process = QtCore.QProcess()
+                        self.process.setWorkingDirectory(self.pathBD)
+                        self.process.readyReadStandardOutput.connect(lambda: self.labOutputBD.append(str(self.process.readAllStandardOutput().data().decode('UTF-8')))) 
+                        self.process.readyReadStandardError.connect(self.handle_stderr)
+                        QtCore.QTimer.singleShot(100, partial(self.process.start, 'python BuildData.py'))
+                        self.process.waitForStarted()                        
+                        self.btnKillProcess.clicked.connect(self.process.kill)
+                        self.btnKillProcess.clicked.connect(self.buzy_Close)
+                        self.btnKillProcess.clicked.connect(self.close)                    
+                        self.process.finished.connect(self.status_CreateData1)
+                    else:
+                        self.btnKillProcess.clicked.connect(self.close)
+                        self.btnKillProcess.clicked.connect(self.buzy_Close)
+                        self.status_NoBuild()
+            elif (platform.system() == "Linux") or (platform.system() == "Darwin"):
                 self.pathBD = os.path.join(self.pathHapDir,"prepareData")
                 self.fileBD = os.path.join(self.pathBD, "BuildData.py")
                 my_path = Path(self.fileBD)
@@ -165,8 +175,7 @@ class CreateDataFrame(QGroupBox):
                     self.process.readyReadStandardOutput.connect(lambda: self.labOutputBD.append(str(self.process.readAllStandardOutput().data().decode('UTF-8')))) 
                     self.process.readyReadStandardError.connect(self.handle_stderr)
                     QtCore.QTimer.singleShot(100, partial(self.process.start, 'python BuildData.py'))
-                    self.process.waitForStarted()
-                    
+                    self.process.waitForStarted()                    
                     self.btnKillProcess.clicked.connect(self.process.kill)
                     self.btnKillProcess.clicked.connect(self.buzy_Close)
                     self.btnKillProcess.clicked.connect(self.close)                    
@@ -228,6 +237,137 @@ class CreateDataFrame(QGroupBox):
         
 
 
+#######################################
+#class  ViewSources
+
+class ViewSources(QWidget):
+    """a widget to display editable URL sources for data downoad.
+    """
+    def __init__(self, pathHapDir):
+        """constructor
+        """
+        super().__init__()
+        self.pathHapDir = pathHapDir
+        self.initUI()
+        
+    def initUI(self):
+        """define the GUI
+        """  
+        self.sources_display()
+        self.show()
+        
+    def sources_display(self):
+        # platform and stylesheet  
+        try:        
+            styleFile = GUI_miscFeatures.CONFIGURATION_FILES[platform.system()]["styleSheet"]  
+        except:
+            print("StyleSheet: Your current OS is not supported.")
+        # fbs app special
+        self.setStyleSheet(open(styleFile, "r").read())
+        # appctxt = ApplicationContext()
+        # appctxt.app.setStyleSheet(open(appctxt.get_resource(styleFile)).read())          
+       
+        self.setMinimumSize(1000,300)
+        layoutAll = QVBoxLayout() 
+        sourceFrame = QFrame()             
+        grid = QGridLayout()
+
+        # GUIsrc working directory      
+        self.dirParent = os.getcwd()
+        self.pathURLconfig = str(os.path.join(self.pathHapDir, "prepareData", "url_config.txt"))  
+       
+        # Read URLconfig 
+        if(os.path.isfile(self.pathURLconfig)):
+            try:            
+                # read parameters
+                fi = open(self.pathURLconfig, 'r')
+                for line in fi:
+                    if not line.startswith('#'):                    
+                        line = line.rstrip('\r\n')
+                        splittedLine = line.split('=')
+                        inputFileName = splittedLine[0]
+                        inputURL = splittedLine[1]
+
+                        if inputFileName == 'hla_nom_p.txt' :
+                            urlForHlanomp = inputURL
+                        elif inputFileName == 'hla_nom_g.txt' :
+                            urlForHlanomg = inputURL
+                        elif inputFileName == 'alpha.v3.zip' :
+                            urlForAlpha = inputURL
+                        elif inputFileName == 'hla_ambigs.xml.zip' :
+                            urlForHlaambigs = inputURL
+                        else:
+                            qMessTxt = f"Unknown parameter in url_config.txt:\n{inputFileName}."
+                            QMessageBox.about(self, 'Unknown parameter', qMessTxt)
+                fi.close()
+            except:
+                QMessageBox.about(self, "Error", "Something went wrong reading from url_config.txt")
+        else:
+            QMessageBox.about(self,"Error", "No URL configuration file\n(url_config.txt) found!") 
+        
+
+        btnSaveSources =QPushButton('Save')
+        btnCancelSources =QPushButton('Cancel')
+        btnCancelSources.setStyleSheet(GUI_miscFeatures.button_style_cancel)
+        self.labSource1 = QLabel('hla_nom_p.txt') 
+        self.sourceEdit1 = QLineEdit(urlForHlanomp)
+        self.labSource2 = QLabel('hla_nom_g.txt') 
+        self.sourceEdit2 = QLineEdit(urlForHlanomg)
+        self.labSource3 = QLabel('alpha.v3.zip') 
+        self.sourceEdit3 = QLineEdit(urlForAlpha)
+        self.labSource4 = QLabel('hla_ambigs.xml.zip') 
+        self.sourceEdit4 = QLineEdit(urlForHlaambigs)
+
+        grid.addWidget(self.labSource1, 0, 1)
+        grid.addWidget(self.sourceEdit1, 0, 2)
+        grid.addWidget(self.labSource2, 1, 1)
+        grid.addWidget(self.sourceEdit2, 1, 2)
+        grid.addWidget(self.labSource3, 2, 1)
+        grid.addWidget(self.sourceEdit3, 2, 2)
+        grid.addWidget(self.labSource4, 3, 1)
+        grid.addWidget(self.sourceEdit4, 3, 2)
+        grid.addWidget(btnCancelSources, 4,2)
+        grid.addWidget(btnSaveSources, 4,2)
+
+        hbox1 = QHBoxLayout()
+        hbox1.addStretch(1)
+        hbox1.addWidget(btnCancelSources)   
+        hbox1.addWidget(btnSaveSources)   
+
+        sourceFrame.setLayout(grid)
+        layoutAll.addWidget(sourceFrame)
+        layoutAll.addLayout(hbox1)
+        self.setLayout(layoutAll)
+
+        # button action
+        btnSaveSources.clicked.connect(self.saveSources_test)  #save parameters  
+        btnCancelSources.clicked.connect(self.close)
+        
+        self.show()
+
+    # Functions
+    def saveSources_test(self):
+        """saves URLInformation to url_config.txt
+        """
+        reply = QMessageBox.question(self, 'Save changes', 'Are you sure you want to save changes to the URL configuration file?',
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            fi = open(self.pathURLconfig, 'w')
+            txt = "{}={}\n".format(self.labSource1.text(), self.sourceEdit1.text())  
+            fi.write(str(txt))    
+            txt = "{}={}\n".format(self.labSource2.text(), self.sourceEdit2.text())   
+            fi.write(str(txt)) 
+            txt = "{}={}\n".format(self.labSource3.text(), self.sourceEdit3.text())   
+            fi.write(str(txt)) 
+            txt = "{}={}\n".format(self.labSource4.text(), self.sourceEdit4.text())     
+            fi.write(str(txt))
+            fi.close()
+        self.close()
+
+
+
+
+
 ##################################
 # Class WaitLines 
 
@@ -276,7 +416,7 @@ class WaitLines(QFrame):
 
         for i in range(8):      
             painter.setOpacity(trs[self.count%8][i])
-            painter.drawLine(0.0, -4.0, 0.0, -10.0)
+            painter.drawLine(0, -4, 0, -10)
             painter.rotate(45)
 
     def timerEvent(self, event):

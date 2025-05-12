@@ -40,12 +40,14 @@ Widget for run parameter settings
 @author: Ute Solloch
 '''
 
-# # fbs app special
+# fbs app special
 # from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
 # import modules:
 from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import (QApplication, QFileDialog, QMessageBox,QVBoxLayout,
+                             QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit,
+                             QGridLayout, QFrame, QGroupBox, QComboBox, QDesktopWidget)
 from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5.QtCore import pyqtSignal
@@ -85,19 +87,15 @@ class Parameters(QWidget):
         """define the GUI
         """   
       
-        # stylesheet and platform
-        # # fbs app special
+        # platform and stylesheet       
+        try:        
+            styleFile = GUI_miscFeatures.CONFIGURATION_FILES[platform.system()]["styleSheet"]  
+        except:
+            print("StyleSheet: Your current OS is not supported.")
+        # fbs app special
+        self.setStyleSheet(open(styleFile, "r").read())
         # appctxt = ApplicationContext()
-        if platform.system() == "Windows":
-            # # fbs app special
-            self.setStyleSheet(open("styleWin.qss", "r").read())
-            # stylesheet = appctxt.get_resource('styleWin.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read()) 
-        elif platform.system() == "Linux":
-            # # fbs app special
-            self.setStyleSheet(open("styleLinux.qss", "r").read())
-            # stylesheet = appctxt.get_resource('styleLinux.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read())    
+        # appctxt.app.setStyleSheet(open(appctxt.get_resource(styleFile)).read()) 
         
         global dictLoci
         dictLoci = {}
@@ -190,8 +188,8 @@ class Parameters(QWidget):
         
         # Initialize self.dictRes
         if 'LOCI_AND_RESOLUTIONS' in self.dictPara.keys(): 
-            locAndRes0 = self.dictPara['LOCI_AND_RESOLUTIONS']
-            locAndRes = locAndRes0.replace('2d','1f').replace('4d','2f').replace('6d','3f').replace('8d','4f')
+            locAndRes = self.dictPara['LOCI_AND_RESOLUTIONS']
+            # locAndRes = locAndRes0.replace('2d','1f').replace('4d','2f').replace('6d','3f').replace('8d','4f')
             resList = locAndRes.split(',')
             self.dictRes = {}
             for i in resList:
@@ -483,13 +481,14 @@ class Parameters(QWidget):
                 rem = listMiss[:-1]
                 locMissStrInt = ", ".join(rem)
                 locMissStr = locMissStrInt + ", and " + last
-            msgInvalidLoc = QMessageBox()
+            msgInvalidLoc = QMessageBox(self)
             msgInvalidLoc.setIcon(QMessageBox.Warning)
             msgInvalidLoc.setWindowTitle("Warning")
             msgInvalidLoc.setText("Input file: Invalid locus/loci.")
             msgInvalidLoc.setInformativeText("For Loci\n" + locMissStr + "\nno allele information is available in the current IPD-IMGT/HLA data. These loci will be ignored in the haplotype frequency estimation.")
             msgInvalidLoc.setStandardButtons(QMessageBox.Ok)
             msgInvalidLoc.exec_()
+            msgInvalidLoc.move(self.pos())
                 
         
     def browse_folder_results(self):
@@ -538,13 +537,14 @@ class Parameters(QWidget):
             self.epsilonRec = 1/(2*self.countDon)
             self.textCut = "1/(2n) = {0:1.2g}".format(self.epsilonRec)
         except:
-            msgInvalidPara = QMessageBox()
+            msgInvalidPara = QMessageBox(self)
             msgInvalidPara.setIcon(QMessageBox.Warning)
             msgInvalidPara.setWindowTitle("Warning")
             msgInvalidPara.setText("Input path or file not found.")
             msgInvalidPara.setInformativeText("Please select a valid parameter file or set parameters via input mask.")
             msgInvalidPara.setStandardButtons(QMessageBox.Ok)
             msgInvalidPara.exec_()
+            msgInvalidPara.move(self.pos())
         
     def processInput(self):
         """identifies input file format, input loci, and calculates maximum epsilon value
@@ -609,17 +609,19 @@ class Parameters(QWidget):
         """
         inpRead = self.textEdit_Input_tab1.text()
         if (inpRead == ''):
-            msgFileIn = QMessageBox()
+            msgFileIn = QMessageBox(self)
             msgFileIn.setIcon(QMessageBox.Warning)
             msgFileIn.setWindowTitle("Incomplete entries.")
             msgFileIn.setText("Please choose genotype input file.")
             msgFileIn.setStandardButtons(QMessageBox.Ok)
             msgFileIn.exec_()
+            msgFileIn.move(self.pos())
         else:
             self.resW = GUI_Resolution.Resolution(self.listLociValid, self.dictRes)
             self.resW.setWindowTitle('Locus resolution')
             self.resW.strRes.connect(self.printResolution)        
             self.resW.show()
+            self.resW.move(self.pos())
         
     def printResolution(self, strRes):
         """processes signal from resolution choice window
@@ -645,7 +647,9 @@ class Parameters(QWidget):
         """
         self.listLoci.clear()
         LoadP,_ = QFileDialog.getOpenFileName(self, 'Pick parameter file', '..')
-        relDirLoadP = os.path.relpath(LoadP, start=os.curdir)
+        if LoadP != '':
+            relDirLoadP = os.path.relpath(LoadP, start=os.curdir)
+            paraPath = os.path.dirname(relDirLoadP) 
         # Read default parameters in dictPara
         self.dictPara = {}
         try:
@@ -656,12 +660,13 @@ class Parameters(QWidget):
                 if (len(listLine)>1):
                     self.dictPara[listLine[0]]= listLine[1]
         except:
-            msgInvalidPara = QMessageBox()
+            msgInvalidPara = QMessageBox(self)
             msgInvalidPara.setIcon(QMessageBox.Warning)
             msgInvalidPara.setWindowTitle("Warning")
             msgInvalidPara.setText("Invalid parameter file.")
             msgInvalidPara.setStandardButtons(QMessageBox.Ok)
             msgInvalidPara.exec_()
+            msgInvalidPara.move(self.pos())
         else:                
             arr_indexes = ['FILENAME_HAPLOTYPEFREQUENCIES', 'FILENAME_INPUT', 'FILENAME_HAPLOTYPES', 'FILENAME_GENOTYPES',
                            'FILENAME_EPSILON_LOGL', 'MINIMAL_FREQUENCY_GENOTYPES', 'DO_AMBIGUITYFILTER',
@@ -672,16 +677,19 @@ class Parameters(QWidget):
                 for i in arr_indexes:
                     t = self.dictPara[i]
             except KeyError:
-                msgInvalidPara = QMessageBox()
+                msgInvalidPara = QMessageBox(self)
                 msgInvalidPara.setIcon(QMessageBox.Warning)
                 msgInvalidPara.setWindowTitle("Warning")
                 msgInvalidPara.setText("Parameter file not valid.")
                 msgInvalidPara.setInformativeText("One or more of the mandatory entries are missing. Please select a valid parameter file or set parameters via input mask.")
                 msgInvalidPara.setStandardButtons(QMessageBox.Ok)
                 msgInvalidPara.exec_()
+                msgInvalidPara.move(self.pos())
             else:   
                 #file names  
                 filename_htf = self.dictPara['FILENAME_HAPLOTYPEFREQUENCIES']
+                if not os.path.isabs(filename_htf):
+                    filename_htf = os.path.abspath(os.path.join(paraPath, filename_htf))  
                 fileSplit = os.path.split(filename_htf)
                 if "_" in fileSplit[1]:
                     self.runID = fileSplit[1].split('_')[0]
@@ -690,12 +698,20 @@ class Parameters(QWidget):
                 self.path_ResDir = fileSplit[0]
                 
                 self.path_InpFile = self.dictPara['FILENAME_INPUT']
+                if not os.path.isabs(self.path_InpFile):
+                    self.path_InpFile = os.path.abspath(os.path.join(paraPath, self.path_InpFile))   
                 self.processInputDefault()
                 self.textEdit_CutRec_tab1.setText(self.textCut)
                 
                 filename_haplotypes = self.dictPara['FILENAME_HAPLOTYPES']
+                if not os.path.isabs(filename_haplotypes):
+                    filename_haplotypes = os.path.abspath(os.path.join(paraPath, filename_haplotypes))  
                 filename_genotypes = self.dictPara['FILENAME_GENOTYPES']
+                if not os.path.isabs(filename_genotypes):
+                    filename_genotypes = os.path.abspath(os.path.join(paraPath, filename_genotypes))  
                 filename_epsLog = self.dictPara['FILENAME_EPSILON_LOGL']
+                if not os.path.isabs(filename_epsLog):
+                    filename_epsLog = os.path.abspath(os.path.join(paraPath, filename_epsLog))  
                 min_freq_genos = self.dictPara['MINIMAL_FREQUENCY_GENOTYPES']
                 doAmb = self.dictPara['DO_AMBIGUITYFILTER']
                 expLinesAmb = self.dictPara['EXPAND_LINES_AMBIGUITYFILTER']
@@ -705,8 +721,7 @@ class Parameters(QWidget):
                 cut_htf = self.dictPara['CUT_HAPLOTYPEFREQUENCIES']
                 renormHTF = self.dictPara['RENORMALIZE_HAPLOTYPEFREQUENCIES']
                 seed = self.dictPara['SEED']
-                locAndRes0 = self.dictPara['LOCI_AND_RESOLUTIONS']
-                locAndRes = locAndRes0.replace('2d','1f').replace('4d','2f').replace('6d','3f').replace('8d','4f')
+                locAndRes = self.dictPara['LOCI_AND_RESOLUTIONS']
                 
                 # write settings to parameter mask
                 self.textEdit_FoldRes_tab1.setText(self.path_ResDir)
@@ -791,8 +806,8 @@ class Parameters(QWidget):
         """
         # tests for validity of parameter entries
         rID = self.textEdit_RunId_tab1.text()
-        if (re.search("[_,\,/,*,?,:,\",<,>,|,%, ]", rID)):
-            QMessageBox.about(self, 'Invalid RunID:','RunID must not contain space characters or one of the following characters: _, \, /, *, ?, :, \", <, >, |, or %.')
+        if (re.search("[_,\\,/,*,?,:,\",<,>,|,%, ]", rID)):
+            QMessageBox.about(self, 'Invalid RunID:','RunID must not contain space characters or one of the following characters: _, \\, /, *, ?, :, \", <, >, |, or %.')
             return
                         
     def saveAsTest(self):
@@ -836,8 +851,8 @@ class Parameters(QWidget):
             return
             
         rID = self.textEdit_RunId_tab1.text()
-        if (re.search("[\,/,*,?,:,\",<,>,|,%, ]", rID)):
-            QMessageBox.about(self, 'Invalid RunID:','RunID must not contain space characters or one of the following characters: \, /, *, ?, :, \", <, >, |, or %.')
+        if (re.search("[\\,/,*,?,:,\",<,>,|,%, ]", rID)):
+            QMessageBox.about(self, 'Invalid RunID:','RunID must not contain space characters or one of the following characters: \\, /, *, ?, :, \", <, >, |, or %.')
             return
             
         resRead = self.textEdit_FoldRes_tab1.text()
@@ -846,23 +861,25 @@ class Parameters(QWidget):
         if ((resRead == '') or (inpRead == '')):
             QMessageBox.about(self, 'Incomplete entries.','Please choose results folder and input file.')
             return
-        elif (strRes is ''):
+        elif (strRes == ''):
             QMessageBox.about(self, 'Incomplete entries.','Please choose loci resolution.')
             return
         elif (seed > 1000000000):
             QMessageBox.about(self, 'Invalid seed.','Please choose an integer value for SEED between 0 and 1,000,000,000.')
             return
         elif (epsilon > self.epsilonRec):
-            msgEps = QMessageBox()
+            msgEps = QMessageBox(self)
             msgEps.setIcon(QMessageBox.Warning)
             msgEps.setWindowTitle("Invalid epsilon:")
             errTxt = "{0:1.4g}".format(self.epsilonRec)
             msgEps.setText("Please choose epsilon value <= " + errTxt + " (1/(2*n)).")
             msgEps.setStandardButtons(QMessageBox.Ok)
             msgEps.exec_()
+            msgEps.move(self.pos())
             return
             
         path_htf = self.textEdit_ResHTF_tab1.text()
+        self.refreshFiles()
         self.saveAs() 
 
 
@@ -884,7 +901,7 @@ class Parameters(QWidget):
         self.runID = self.textEdit_RunId_tab1.text()
         inpRun = os.path.join("..", self.textEdit_Input_tab1.text())
         resRun = os.path.join("..", self.textEdit_FoldRes_tab1.text())        
-        strResChanged = strRes.replace("1f", "2d").replace("2f", "4d").replace("3f", "6d").replace("4f", "8d")
+        # strResChanged = strRes.replace("1f", "2d").replace("2f", "4d").replace("3f", "6d").replace("4f", "8d")
         paraFile = open(self.path, 'w+')
         paraFile.truncate(0)
         paraFile.write('#file name\n')
@@ -893,12 +910,14 @@ class Parameters(QWidget):
         paraFile.write('FILENAME_GENOTYPES='+ self.textEdit_ResGen_tab1.text() +'\n')
         paraFile.write('FILENAME_HAPLOTYPEFREQUENCIES='+ self.textEdit_ResHTF_tab1.text() +'\n')
         paraFile.write('FILENAME_EPSILON_LOGL='+ self.textEdit_ResEps_tab1.text() +'\n')
+        paraFile.write('FILENAME_ANALYTICS=results/analytics.dat'+'\n')
         paraFile.write('#reports\n')
-        paraFile.write('LOCI_AND_RESOLUTIONS='+ strResChanged +'\n')
+        paraFile.write('LOCI_AND_RESOLUTIONS='+ strRes +'\n')
         paraFile.write('MINIMAL_FREQUENCY_GENOTYPES='+ self.textEdit_MinFreq_tab1.text() +'\n')
         paraFile.write('DO_AMBIGUITYFILTER='+ self.combo_Amb_tab1.currentText() +'\n')
         paraFile.write('EXPAND_LINES_AMBIGUITYFILTER='+ self.combo_ExpLines_tab1.currentText() +'\n')
         paraFile.write('WRITE_GENOTYPES='+ self.combo_WriteGeno_tab1.currentText() +'\n')
+        paraFile.write('DO_ANALYTICS=false'+'\n')
         paraFile.write('#EM-algorithm\n')
         paraFile.write('INITIALIZATION_HAPLOTYPEFREQUENCIES='+ self.combo_Ini_tab1.currentText() +'\n')
         paraFile.write('EPSILON='+ self.textEdit_Epsilon_tab1.text() +'\n')
@@ -911,6 +930,8 @@ class Parameters(QWidget):
         # save copies of parameter file
         try:
             shutil.copyfile(self.path, dirSave)
+        except shutil.SameFileError:
+            pass
         except FileNotFoundError:
             return
         shutil.copyfile(self.path, self.pathParaDefault)
@@ -931,7 +952,7 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     listLociBD = ['A', 'B', 'C', 'DMA', 'DMB', 'DOA', 'DOB', 'DPA1', 'DPB1', 'DQA1', 'DQB1', 'DRB1', 'DRB3', 'DRB4', 'DRB5', 'E', 'F', 'G']
-    dirHap = "\home"
+    dirHap = "\\home"
     window = Parameters(listLociBD, dirHap)
 
     app.exec_()

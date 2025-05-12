@@ -45,10 +45,11 @@ some general settings and dialoges
 
 # import modules:
 import sys, os
+import platform
 from collections import defaultdict
-from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QVBoxLayout, QTextBrowser,
-                             QLabel, QFrame, QPushButton, QMessageBox, QDesktopWidget)
+from PyQt5.QtGui import QFont, QPixmap, QPainter, QPen
+from PyQt5.QtWidgets import (QApplication, QGridLayout, QVBoxLayout, QTextBrowser, 
+                             QLabel, QFrame, QPushButton, QMessageBox, QLineEdit,QDesktopWidget, QDialog)
 from PyQt5.Qt import (QWidget, pyqtSlot, QVBoxLayout, pyqtSignal)
 from PyQt5.QtCore import QObject, pyqtSignal, QFile, QTextStream, Qt
 
@@ -59,7 +60,7 @@ label_style_white = "QLabel {background-color: white; border: 1px solid #7accde;
 label_style_grey = "QLabel {background-color: white; inset grey; min-height: 200px; border-radius: 2;}"
 label_style_inactive = "QLabel { background-color: #ededed; border: 1px solid #d1d1cd; border-radius: 2;}"
 
-button_style_cancel = " QPushButton:hover { border: 2px solid #E2001A }" " QPushButton { background-color: QLinearGradient( x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #e6e9eb, stop: 1 #fc6d73); }"
+button_style_cancel = " QPushButton:hover { border: 2px solid #E2001A }" " QPushButton { background-color: QLinearGradient( x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #e6e9eb, stop: 1 #e3a9ac); }"
 button_style_info = " QPushButton:hover { border: 2px solid #707070 }" " QPushButton { background-color: QLinearGradient( x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #e6e9eb, stop: 1 #90aba9); }"
 
 #"DKMSred" : "#E2001A",
@@ -71,7 +72,84 @@ button_style_info = " QPushButton:hover { border: 2px solid #707070 }" " QPushBu
 #"DKMSpink" : "#ED6676",
 #"DKMSdarkpink" : "#E53449",
 
-# classes:    
+
+#####################################
+# Style Sheet
+CONFIGURATION_FILES = {
+    "Windows": {
+        "styleSheet": "styleWin.qss"
+    },
+    "Linux": {
+        "styleSheet": "styleLinux.qss"
+    },
+    "Darwin": {
+        "styleSheet": "styleLinux.qss"
+    }
+}
+
+#####################################
+# classes:   
+class InformationDialog(QDialog):
+    """
+    Dialog to show relevant information
+    file_type: "txt", "htm" or "underconstruction"
+    file_name: "filename" or None
+    """
+    def __init__(self, file_type, file_name, parent):
+        super().__init__(parent)
+        self.file_type = file_type
+        self.file_name = file_name
+        self.layout = None
+        self.initUI()
+
+    def initUI(self):
+        """
+        define the UI
+        """
+        self.information_display()
+
+        self.setLayout(self.layout)
+        self.show()
+
+    def information_display(self):
+        """
+        set main layout with injection. Text, images.
+        """
+        if self.file_name:
+            # positioning
+            self.layout = QVBoxLayout()
+            self.setMinimumSize(800, 400)
+            self.center()
+            labOutputBD = QTextBrowser(self)
+            labOutputBD.verticalScrollBar().setStyleSheet('background: grey')
+            self.layout.addWidget(labOutputBD)
+            
+            # fbs app special
+            # appctxt = ApplicationContext()
+            # f = QFile(appctxt.get_resource(self.file_name))
+            # f.open(QFile.ReadOnly | QFile.Text)
+            f = QFile(self.file_name)
+            f.open(QFile.ReadOnly | QFile.Text)
+            
+            istream = QTextStream(f)
+            if self.file_type == "txt":
+                labOutputBD.setText(istream.readAll())
+            elif self.file_type == "htm":
+                labOutputBD.setHtml(istream.readAll())
+            f.close()
+
+    def center(self):
+        """
+        moves window to screen center
+        """
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+
+########################
+# Class UnderConstruction
 class UnderConstruction(QWidget):
     """a widget to show that something is not implemented yet
     """
@@ -85,7 +163,7 @@ class UnderConstruction(QWidget):
         """define the GUI
         """  
 
-        # # fbs app special
+        # fbs app special
         # appctxt = ApplicationContext()
         # pixmap= QPixmap(appctxt.get_resource("construction.jpg")).scaledToWidth(100)
         pixmap = QPixmap(os.path.join("Icons","construction.jpg")).scaledToWidth(100)
@@ -111,96 +189,6 @@ class UnderConstruction(QWidget):
         self.show()
         
 
-
-
-
-#################################        
-
-class InfoWidget(QWidget):
-    """Parameter window
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-        
-    def initUI(self):
-        """define the GUI
-        """   
-        
-        # # fbs app special
-        # appctxt = ApplicationContext()
-        # infoText = open(appctxt.get_resource('Licenses.txt')).read()
-        infoText = open("Licenses.txt").read()
-
-        #positioning
-        self.setMinimumSize(800,400)
-        self.center()
-        layout = QVBoxLayout()
-        labOutputBD = QTextBrowser()
-        labOutputBD.verticalScrollBar().setStyleSheet('background: grey')
-        layout.addWidget(labOutputBD)
-        labOutputBD.setText(infoText)
-        self.setLayout(layout)
-        self.show()
-
-# Functions
-
-    def center(self):
-        """moves window to screen center
-        """
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-        
-        
-#####################################
-        
-class TutorialWidget(QWidget):
-    """Parameter window
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-        
-    def initUI(self):
-        """define the GUI
-        """   
-        #positioning
-        self.setMinimumSize(800,400)
-        self.center()
-        layout = QVBoxLayout()
-        labOutputT = QTextBrowser()
-        labOutputT.verticalScrollBar().setStyleSheet('background: grey')
-
-        # fbs app special
-        # appctxt = ApplicationContext()
-        # f = QFile(appctxt.get_resource('ManualHapl-o-MatViaGUI.htm'))
-        f = QFile("ManualHapl-o-MatViaGUI.htm")
-        
-        f.open(QFile.ReadOnly|QFile.Text)
-        istream = QTextStream(f)
-        labOutputT.setHtml(istream.readAll())
-        f.close()
-        layout.addWidget(labOutputT)
-        
-        self.setLayout(layout)
-        self.show()
-        
-        
-        
-# Functions
-
-    def center(self):
-        """moves window to screen center
-        """
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-        
         
         
 ##################################

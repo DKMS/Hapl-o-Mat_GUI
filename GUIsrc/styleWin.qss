@@ -118,7 +118,12 @@ QComboBox::drop-down
      /*border-left-width: 2px;
      border-left-color: darkgray;
      border-left-style: solid;*/
- }
+}
+
+QFrame
+{
+	border-radius: 3px;	
+}
 
 QGroupBox
 {

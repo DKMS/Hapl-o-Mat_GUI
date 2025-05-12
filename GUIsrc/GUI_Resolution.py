@@ -40,7 +40,7 @@ Widget for locus resolution settings
 @author: Ute Solloch
 '''
 
-# # fbs app special
+# fbs app special
 # from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
 
@@ -79,19 +79,15 @@ class Resolution(QWidget):
         
         global pixmap_TT 
         
-        # stylesheet and platform
-        # # fbs app special
+        # platform and stylesheet  
+        try:        
+            styleFile = GUI_miscFeatures.CONFIGURATION_FILES[platform.system()]["styleSheet"]  
+        except:
+            print("StyleSheet: Your current OS is not supported.")
+        # fbs app special
+        self.setStyleSheet(open(styleFile, "r").read())
         # appctxt = ApplicationContext()
-        if platform.system() == "Windows":
-            # # fbs app special            
-            # stylesheet = appctxt.get_resource('styleWin.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read()) 
-            self.setStyleSheet(open("styleWin.qss", "r").read())
-        elif platform.system() == "Linux":
-            # # fbs app special            
-            # stylesheet = appctxt.get_resource('styleLinux.qss')
-            # appctxt.app.setStyleSheet(open(stylesheet).read())
-            self.setStyleSheet(open("styleLinux.qss", "r").read())
+        # appctxt.app.setStyleSheet(open(appctxt.get_resource(styleFile)).read())  
         
         self.drop_resolutions = ['g', 'G', 'P', '1field', '2field', '3field', '4field', 'ignore locus']              
         
